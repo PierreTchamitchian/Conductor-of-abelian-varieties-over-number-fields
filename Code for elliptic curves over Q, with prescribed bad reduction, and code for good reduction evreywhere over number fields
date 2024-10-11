@@ -1,0 +1,122 @@
+#Notations : p prime, MesF Mestre test function, fnu inertia degree, lam = lambda
+
+#MesF : Mestre test function. For these algorithms to be correct, MesF must be 
+# Complactly supported in [-1,1], even function, positive Fourier transform
+#BE CAREFUL ALGORITHMS HERE ASSUME Mes POSITIVE. 
+Mes(x) = (1-x)*cos(pi*x)+sin(pi*x)/pi
+
+
+def liste_premier_lambda(lam):                         # Input : lam 
+    C = floor(exp(lam))                                # Output : List of primes <= exp(lam)
+    return prime_range(C+1)
+
+
+#Only over Q
+def Mestre_somme_premier_lambda(p,lam,MesF):            #Local Mestre sum for good primes         
+    S,m,x = 0,1,p                                       
+    while x<= exp(lam):
+        S += (floor(2*sqrt(x)) * x^(-1) * MesF(m*math.log(p)/lam.numerical_approx())).numerical_approx()
+        x *= x
+        m += 1
+    return numerical_approx(log(p)*S)
+
+
+#Only work over Q                                           
+def somme_mult_badprimes_lambda(p,lam,MesF):            # Local sum in the case of p|N i.e multiplicative reduction      
+    S = 0
+    m = 1
+    x = p
+    while x <= exp(lam):
+        S= (S + x^(-1)*MesF(m*math.log(p)/lam.numerical_approx())).numerical_approx()
+        x= p * x
+        m = m+1
+    return numerical_approx(log(p)*S)
+
+                                        
+
+
+def Mestre_somme_withbadprimes_lambda(lam,MesF,mult_badprimes,add_badprimes): #Global sum with mult and add reductions
+    Liste = liste_premier_lambda(lam)                                              
+    Somme = 0
+    for p in Liste:                                                  
+        if p in mult_badprimes :                               #Correct sum for multiplicative red
+            Somme += somme_mult_badprimes_lambda(p,lam,MesF)
+        elif p in add_badprimes:
+            Somme += 0                                         #Do nothing for additive reduction
+        else:
+            Somme += Mestre_somme_premier_lambda(p,lam,MesF)   # In case of good reduction
+    return 2*Somme                                             #factor 2 in the final sum - present in Mestre explicit formula                                                           
+
+
+
+
+
+#Function defining the integrals terms appearing. Not correct if MesF is not completly supported in [-1,1]
+
+
+def Value_Phi_0(MesF):      #The integral term which will be multiplied by the rank. Fourier transform of MesF eval at 0
+    return 2*numerical_integral(MesF(x),0,1)[0]
+
+Constant_Mlambda = 2*math.log(2*pi)     #constant appearing in the formula, let's stock it
+
+def Mlambda2(lam,MesF):
+    aux(x) = MesF(x) * exp(-lam*x)/(1-exp(-lam*x)) - MesF(0) * exp(-lam*x)/(lam*x)
+    a = numerical_integral(aux(x),0,1)[0]
+    b = numerical_integral(exp(-x)/x, lam.numerical_approx() , Infinity )[0] #depends on lam, cannot be stocked :(
+    return 2*(lam*a - MesF(0)*b) +   MesF(0)*Constant_Mlambda       #still a foctor two at the end, like the sum
+
+
+#Final lower bound 
+
+
+#Only over Q
+def minorant_conducteur_lambda_withbadprimes(lam,MesF,rk,mult_badprimes,add_badprimes): #knowing some primes of add and mul reduction
+    K = lam * rk *Value_Phi_0(MesF) + Mlambda2(lam,MesF)-Mestre_somme_withbadprimes_lambda(lam,MesF,mult_badprimes,add_badprimes)
+    return exp(K)
+
+
+
+
+
+
+
+
+
+
+
+#In number fields, without knowing anything about the bad primes, using only the Weil bound
+
+def somme_premier_degre_ramifi(p,lam,MesF,fnu):
+    q = p^fnu
+    S,m,x = 0,1,q
+    while x<= exp(lam):
+        S += (floor(2*sqrt(x)) * x^(-1) * MesF(m*math.log(q)/lam.numerical_approx())).numerical_approx()
+        x *=  q
+        m +=  1
+    return numerical_approx(log(q)*S)
+
+
+
+def Mestre_somme_lambda_nbfield(lam,MesF,K):        #lam = lambda, MesF mestre test function, K number field            
+    Liste = liste_premier_lambda(lam)
+    Somme = 0
+    for p in Liste:
+        for pp in K.primes_above(p):
+            fnu = pp.residue_class_degree()
+            Somme += (somme_premier_degre_ramifi(p,lam,MesF,fnu)).numerical_approx()
+    return 2 * Somme             # un facteur de 2 car deux termes conjugués dans la somme de Mestre
+
+
+
+def minorant_conducteur_lambda_nbfield(lam,MesF,rk,K):     # K nb field (chose not to give polynomial in case of tower extension)  
+    n = K.absolute_degree()
+    disc = K.absolute_discriminant()
+    lowbound = lam * rk * Value_Phi_0(MesF) + n * Mlambda2(lam,MesF) - Mestre_somme_lambda_nbfield(lam,MesF,K)
+    return exp(lowbound)/(disc^2)
+
+
+
+
+
+
+
