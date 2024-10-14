@@ -1,3 +1,11 @@
+THE DATAS ARE ORGANIZED AS FOLLOWS : 
+The first list is made of ordered pairs (Poly,bound) where Poly is the polynomial defining the number field and Bound the corresponding bound
+The second list is made of ordered pairs (discri, lambda) where discri is the discriminant of the number field and the correspdoning lambda 
+These two lists are sorted in the same way : by increasing discriminants of the fields, as given by the database LMFDB.
+
+
+
+
 [(x^3 - x^2 + 1, 4.01072700389686),
  (x^3 + x - 1, 2.78334447884041),
  (x^3 - x^2 + x + 1, 1.90333239696978),
