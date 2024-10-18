@@ -1,0 +1,52 @@
+# These are the algorithms used to optimize test functions. They are presented in the article
+# We present the algorithm giving example 5.3 of the article:
+
+# This programm finds the minimum of the function g(x0,x2) = -(a00*x0^2  + a22*x2^2  + 2*a02*x0*x2) 
+# under the condition K(x0,x2) =  [c00*x0^2  + c22*100*x2^2  + 2*c02*10*x0*x2 == 1, x0 >=0,  x2^2<=0.5,  x0^2  <=4]
+# this condition is equivalent to F(0)=1, where F(y) = p(y)*p(y), * being the convolution product,
+# and p(y) = x0 + x2 y^2 .
+
+
+
+c00 =  1               
+c02 =  1/12   
+c22 =  1/80    
+
+a00 = 5.57174662764544
+a02 = 0.246537931187824        *10
+a22 = 0.00598891629905909      *100
+
+mpol x0 z2 
+g = -(a00*x0^2  + a22*z2^2  + 2*a02*x0*z2) 
+K =  [c00*x0^2  + c22*100*z2^2  + 2*c02*10*x0*z2 == 1, x0 >=0,  z2^2<=0.5,  x0^2  <=4]
+P = msdp(min(g), K,4)
+[status,obj] = msol(P)
+double([x0,z2])
+
+
+
+# This will return the following :
+# SOLUTION: x0,z2 =  1.3781 , -0.5656
+# HENCE x2 = -5.656
+
+
+
+
+
+# One may notice that the givin coeffiscient are sometimes multiplied by 10, or 100.
+# Not doing so , so giving  the following programm
+
+# a00 = 5.57174662764544
+# a02 = 0.246537931187824        
+# a22 = 0.00598891629905909  
+# mpol x0 x2 
+# g = -(a00*x0^2  + a22*x2^2  + 2*a02*x0*x2) 
+# K =  [c00*x0^2  + c22*x2^2  + 2*c02*x0*x2 == 1, x0 >=0,  x2^2<=0.5,  x0^2  <=4]
+# P = msdp(min(g), K,4)
+# [status,obj] = msol(P)
+# double([x0,x2])
+
+# is theorically correct, but runs into numerical problems, due to the way gloptipoly has been coded.
+# Doing a change of variable x2 == z2*10 changes the condition K and the polynomial g in such a way
+# that there are no numerical problems.
+# The idea being that all coefficients of g should be roughly of the same size to cause no numerical problem.
