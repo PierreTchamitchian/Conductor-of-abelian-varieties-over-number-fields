@@ -1,3 +1,12 @@
+# The following algorithms are straighforwardly computing the bound 
+# using Mestre's method.
+
+
+
+
+
+
+
 #Notations : p prime, MesF Mestre test function, fnu inertia degree, lam = lambda
 
 #MesF : Mestre test function. For these algorithms to be correct, MesF must be 
@@ -12,7 +21,7 @@ def liste_premier_lambda(lam):                         # Input : lam
 
 
 #Only over Q
-def Mestre_somme_premier_lambda(p,lam,MesF):            #Local Mestre sum for good primes         
+def Mestre_somme_premier_lambda(p,lam,MesF):            # Local Mestre sum for good primes         
     S,m,x = 0,1,p                                       
     while x<= exp(lam):
         S += (floor(2*sqrt(x)) * x^(-1) * MesF(m*math.log(p)/lam.numerical_approx())).numerical_approx()
@@ -35,23 +44,23 @@ def somme_mult_badprimes_lambda(p,lam,MesF):            # Local sum in the case 
                                         
 
 
-def Mestre_somme_withbadprimes_lambda(lam,MesF,mult_badprimes,add_badprimes): #Global sum with mult and add reductions
+def Mestre_somme_withbadprimes_lambda(lam,MesF,mult_badprimes,add_badprimes):   #Global sum with mult and add reductions
     Liste = liste_premier_lambda(lam)                                              
     Somme = 0
     for p in Liste:                                                  
-        if p in mult_badprimes :                               #Correct sum for multiplicative red
+        if p in mult_badprimes :                                      #Correct sum for multiplicative red
             Somme += somme_mult_badprimes_lambda(p,lam,MesF)
         elif p in add_badprimes:
-            Somme += 0                                         #Do nothing for additive reduction
+            Somme += 0                                                 #Do nothing for additive reduction
         else:
-            Somme += Mestre_somme_premier_lambda(p,lam,MesF)   # In case of good reduction
-    return 2*Somme                                             #factor 2 in the final sum - present in Mestre explicit formula                                                           
+            Somme += Mestre_somme_premier_lambda(p,lam,MesF)       # In case of good reduction
+    return 2*Somme                                                 #factor 2 in the final sum - present in Mestre explicit formula                                                           
 
 
 
 
 
-#Function defining the integrals terms appearing. Not correct if MesF is not completly supported in [-1,1]
+#Function defining the integrals terms appearing. Not correct if MesF is not even, compactly supported in [-1,1]
 
 
 def Value_Phi_0(MesF):      #The integral term which will be multiplied by the rank. Fourier transform of MesF eval at 0
@@ -118,5 +127,74 @@ def minorant_conducteur_lambda_nbfield(lam,MesF,rk,K):     # K nb field (chose n
 
 
 
+# This algorithm calculates the \lambda giving the highest bound 
+# computed by minorant_conducteur_lambda_nbfield( \lambda ,MesF,rk,K)
+# for a field K, a mestre test function MesF and a rank k
 
+def optimi_lam(MesF,rk,K):
+    earlylam = 1
+    earlyval = minorant_conducteur_lambda_nbfield(earlylam,MesF,rk,K) 
+    while minorant_conducteur_lambda_nbfield(earlylam + 1,MesF,rk,K) > earlyval:
+        earlyval = minorant_conducteur_lambda_nbfield(earlylam + 1,MesF,rk,K)
+        earlylam = earlylam + 1
+    midlam = earlylam-0.9
+    midval = minorant_conducteur_lambda_nbfield(midlam,MesF,rk,K)
+    while minorant_conducteur_lambda_nbfield(midlam + 0.1,MesF,rk,K) > midval:
+        midval = minorant_conducteur_lambda_nbfield(midlam + 0.1,MesF,rk,K)
+        midlam = midlam + 0.1
+    finlam = midlam-0.09
+    finval = minorant_conducteur_lambda_nbfield(finlam,MesF,rk,K)
+    while minorant_conducteur_lambda_nbfield(finlam+0.01,MesF,rk,K) > finval:
+        finval = minorant_conducteur_lambda_nbfield(finlam+0.01,MesF,rk,K)
+        finlam += 0.01
+    return (finlam)
+
+
+
+# Suppose you downloaded data for fields of degree 5 in the lmfdb ( by data : essentially difning polynomials for your fields, 
+# for all fields up to a certain root discriminant. One can take fields with a root discriminant up to 11.2
+# but if you only want to know if the bound is greter than 1 or lower than  1 then
+# Generally the bound are much lower than 1 for root discriminant around 9 or 10.
+
+
+# We suppose we downloaded a file "degree 05 fields.sage" with said data.
+# The following programm computes
+# the optimal \lambda, the associate bound, the rootdiscriminant for each fieldin you list, here degree  5 fields.
+# then register then in lists. 
+# counting the number of computated conductor bound greater than 1 gives you
+# the number of fields over which no abelian variety can have everywhere good reduction
+
+
+f = open("degree 05 fields.sage","r")
+deg = 5
+
+def liste_file():
+    listeofthefields = []
+    for s in f.readlines():
+        if s[0] =="[" :
+            string_poly =  s.split('[')[2].split(']')[0]
+            poly = [ ZZ(n) for n in string_poly.split(", ")]
+            listeofthefields += [poly]
+    return listeofthefields
+
+poly_fields = liste_file()
+
+
+
+ZZx.<x> = ZZ[]
+Liste_lambda_discri  = []
+Liste_lambda_bounds  = []
+Liste_discri_bounds  = []
+Liste_field_bounds   = []
+for coefficients in poly_fields:
+    poly = ZZx(coefficients)
+    J.<a> = NumberField(poly)
+    rootdisc = float(abs(J.absolute_discriminant())^(1/deg))
+    optlam = optimi_lam(Mes,0,J)
+    low_bound = minorant_conducteur_lambda_nbfield(optlam,Mes,0,J)^(1/deg)
+    Liste_field_bounds  += [(poly,low_bound)]
+    Liste_discri_bounds += [(rootdisc,low_bound)]
+    Liste_lambda_bounds += [(optlam,low_bound)]
+    Liste_lambda_discri += [(rootdisc,optlam)]
+    print(rootdisc)
 
