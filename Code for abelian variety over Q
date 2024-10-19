@@ -1,0 +1,130 @@
+# The following algorithms are straighforwardly computing the bound 
+# using Mestre's method.
+
+
+
+
+
+
+
+#Notations : p prime, MesF Mestre test function, fnu inertia degree, lam = lambda
+
+#MesF : Mestre test function. For these algorithms to be correct, MesF must be 
+# Complactly supported in [-1,1], even function, positive Fourier transform
+#BE CAREFUL ALGORITHMS HERE ASSUME Mes POSITIVE. 
+Mes(x) = (1-x)*cos(pi*x)+sin(pi*x)/pi
+
+
+def liste_premier_lambda(lam):                         # Input : lam 
+    C = floor(exp(lam))                                # Output : List of primes <= exp(lam)
+    return prime_range(C+1)
+
+
+#Only over Q
+def Mestre_somme_premier_lambda(p,lam,MesF):            # Local Mestre sum for good primes         
+    S,m,x = 0,1,p                                       
+    while x<= exp(lam):
+        S += (floor(2*sqrt(x)) * x^(-1) * MesF(m*math.log(p)/lam.numerical_approx())).numerical_approx()
+        x *= x
+        m += 1
+    return numerical_approx(log(p)*S)
+
+
+#Only work over Q                                           
+def somme_mult_badprimes_lambda(p,lam,MesF):            # Local sum in the case of p|N i.e multiplicative reduction      
+    S = 0
+    m = 1
+    x = p
+    while x <= exp(lam):
+        S= (S + x^(-1)*MesF(m*math.log(p)/lam.numerical_approx())).numerical_approx()
+        x= p * x
+        m = m+1
+    return numerical_approx(log(p)*S)
+
+                                        
+
+
+def Mestre_somme_withbadprimes_lambda(lam,MesF,mult_badprimes,add_badprimes):   #Global sum with mult and add reductions
+    Liste = liste_premier_lambda(lam)                                              
+    Somme = 0
+    for p in Liste:                                                  
+        if p in mult_badprimes :                                      #Correct sum for multiplicative red
+            Somme += somme_mult_badprimes_lambda(p,lam,MesF)
+        elif p in add_badprimes:
+            Somme += 0                                                 #Do nothing for additive reduction
+        else:
+            Somme += Mestre_somme_premier_lambda(p,lam,MesF)       # In case of good reduction
+    return 2*Somme                                                 #factor 2 in the final sum - present in Mestre explicit formula                                                           
+
+
+
+
+
+#Function defining the integrals terms appearing. Not correct if MesF is not even, compactly supported in [-1,1]
+
+
+def Value_Phi_0(MesF):      #The integral term which will be multiplied by the rank. Fourier transform of MesF eval at 0
+    return 2*numerical_integral(MesF(x),0,1)[0]
+
+Constant_Mlambda = 2*math.log(2*pi)     #constant appearing in the formula, let's stock it
+
+def Mlambda2(lam,MesF):
+    aux(x) = MesF(x) * exp(-lam*x)/(1-exp(-lam*x)) - MesF(0) * exp(-lam*x)/(lam*x)
+    a = numerical_integral(aux(x),0,1)[0]
+    b = numerical_integral(exp(-x)/x, lam.numerical_approx() , Infinity )[0] #depends on lam, cannot be stocked :(
+    return 2*(lam*a - MesF(0)*b) +   MesF(0)*Constant_Mlambda       #still a foctor two at the end, like the sum
+
+
+#Final lower bound 
+
+
+#Only over Q
+def minorant_conducteur_lambda_withbadprimes(lam,MesF,rk,mult_badprimes,add_badprimes): #knowing some primes of add and mul reduction
+    K = lam * rk *Value_Phi_0(MesF) + Mlambda2(lam,MesF)-Mestre_somme_withbadprimes_lambda(lam,MesF,mult_badprimes,add_badprimes)
+    return exp(K)
+
+
+
+
+
+def sum_abelian_varieties(lam, MesF, dimV, dict_ofbad_primes):
+    Liste_of_primes = liste_premier_lambda(lam)
+    badprimes = dict_ofbad_primes.keys()
+    finalsum = 0
+    for p in Liste_of_primes:
+        if p in badprimes:
+            [dim_mult,dim_add] = dict_ofbad_primes[p]
+            localsum = (dimV-dim_mult-dim_add)*Mestre_somme_premier_lambda(p,lam,MesF) #dimm_add is important here
+            localsum += dim_mult * somme_mult_badprimes_lambda(p,lam,MesF)
+            finalsum += localsum
+        else:
+            finalsum += dimV*Mestre_somme_premier_lambda(p,lam,MesF)
+    return 2*finalsum
+
+def lowerbound_conductor_abelianvarrieties(lam,MesF,dimV,rankV, dict_ofbad_primes):
+    Mestre_sum  = sum_abelian_varieties(lam, MesF, dimV, dict_ofbad_primes)
+    Mestre_integral_term = lam * rankV * Value_Phi_0(MesF) + dimV *  Mlambda2(lam,MesF)
+    bound_of_log = Mestre_integral_term - Mestre_sum
+    return exp(bound_of_log)
+
+
+
+
+
+def optimi_lam_abelian_var(MesF,dimV,rankV,dict_ofbad_primes):
+    earlylam = 1
+    earlyval = lowerbound_conductor_abelianvarrieties(earlylam,MesF,dimV,rankV, dict_ofbad_primes) 
+    while lowerbound_conductor_abelianvarrieties(earlylam+1,MesF,dimV,rankV, dict_ofbad_primes) > earlyval:
+        earlyval = lowerbound_conductor_abelianvarrieties(earlylam+1,MesF,dimV,rankV, dict_ofbad_primes)
+        earlylam = earlylam + 1
+    midlam = earlylam-0.9
+    midval = lowerbound_conductor_abelianvarrieties(midlam,MesF,dimV,rankV, dict_ofbad_primes)
+    while lowerbound_conductor_abelianvarrieties(midlam+0.1,MesF,dimV,rankV, dict_ofbad_primes) > midval:
+        midval = lowerbound_conductor_abelianvarrieties(midlam+0.1,MesF,dimV,rankV, dict_ofbad_primes)
+        midlam = midlam + 0.1
+    finlam = midlam-0.09
+    finval = lowerbound_conductor_abelianvarrieties(finlam,MesF,dimV,rankV, dict_ofbad_primes)
+    while lowerbound_conductor_abelianvarrieties(finlam+0.01,MesF,dimV,rankV, dict_ofbad_primes) > finval:
+        finval = lowerbound_conductor_abelianvarrieties(finlam+0.01,MesF,dimV,rankV, dict_ofbad_primes)
+        finlam += 0.01
+    return (finlam)
