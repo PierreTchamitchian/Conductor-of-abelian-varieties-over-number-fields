@@ -7,17 +7,22 @@
 # and p(y) = x0 + x2 y^2 .
 
 
+The notations are the same as in Example 5.3 to the exception of 
+x0 and x2 in the code, which actually correspond to a0 and a2 in the article. 
+
 
 c00 =  1               
 c02 =  1/12   
 c22 =  1/80    
 
-a00 = 5.57174662764544
-a02 = 0.246537931187824        *10
-a22 = 0.00598891629905909      *100
+b00 = 5.57174662764544
+b02 = 0.246537931187824        *10
+b22 = 0.00598891629905909      *100
+
+
 
 mpol x0 z2 
-g = -(a00*x0^2  + a22*z2^2  + 2*a02*x0*z2) 
+g = -(b00*x0^2  + b22*z2^2  + 2*b02*x0*z2) 
 K =  [c00*x0^2  + c22*100*z2^2  + 2*c02*10*x0*z2 == 1, x0 >=0,  z2^2<=0.5,  x0^2  <=4]
 P = msdp(min(g), K,4)
 [status,obj] = msol(P)
