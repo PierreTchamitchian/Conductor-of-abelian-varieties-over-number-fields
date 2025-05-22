@@ -58,3 +58,7 @@ It is made to run in Gloptipoly, installed on Octave as described in     https:/
 
 
 The files "Data for degree n fields" with various n contains the defining polynomials, root discriminants, computed bounds, optimal lambdas,  and computed conductor bounds for fields od degree n, here with n up to 12 (one can test that for higher degree the bounds are always < 1). For some degrees we did not take every field of root discriminant up to 11.19, which is the bound given in Proposition 4.10, as it was clear from the data that no more field would give a bound higher than 1, and it would have taken a lot more time (for degree n = 10 they are 18000 fields of root discriminant smaller than 9 and 85000 fields of root discriminant smaller than 11.2 for example).
+
+
+A file containing only fields for which the computed bound is greater than 1 is provided. It contains, for each field K its LMFDB label, a defining polynomial and the corresponding Mestre bound. 
+The subfields of these fields are also provided, as no abelian variety with everywhere good reduction can exist on them too.
